@@ -1,0 +1,52 @@
+---
+# YAML documents begin with the document separator ---
+
+# The minus in YAML this indicates a list item. The playbook contains a list of
+# plays, with each play being a dictionary
+- name: "configuring apache on webservers"
+  # Target: where our play will run and options it will run with
+  hosts: webservers
+  tasks:
+    # ensure apache is installed in redhat and centos platform distribution
+    - name: ensure apache is at the latest version
+      yum: name=httpd state=present
+      when: ansible_os_family == 'CentOS' or ansible_os_family == 'RedHat'
+      tags:
+        - apache
+
+    # replacing default index.html
+    - name: replace default index.html file
+      template: src=../templates/index.html.j2 dest=/var/www/html/index.html mode=0644 owner=apache group=root
+      notify:
+        - restart apache
+      tags:
+        - apache
+    # restart apache in ubuntu or debian
+    - name: restart apache
+      service:
+        name: apache2
+        state: started
+        enabled: true
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+      tags:
+        - apache
+    # restart apache in ubuntu or debian
+    - name: restart httpd
+      service:
+        name: httpd
+        state: restarted
+        enabled: true
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
+      tags:
+        - apache
+    # enabling 80 port in firewall
+    - name: Open port 80
+      firewalld: service=http permanent=true state=enabled
+      tags:
+        - apache
+  
+     # restart firewall in redhat or centos
+    - name: start the firewalld service
+      service: name=firewalld state=restarted
+      tags:
+        - firewall
