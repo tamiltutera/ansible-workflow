@@ -8,7 +8,7 @@
   hosts: webservers
   tasks:
     - name: create ansible group 
-      group: name=apache state=absent
+      group: name=apache state=present
       tags:
         - apache
 
